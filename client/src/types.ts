@@ -1,0 +1,6 @@
+// Product interface
+export interface Product {
+    id: number;
+    price: number;
+}
+  
