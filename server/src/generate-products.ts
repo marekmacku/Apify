@@ -45,7 +45,7 @@ const generateProducts = (count: number) => {
 };
 
 // Generate 10 000 products and save them to json
-const products = generateProducts(10000);
+const products = generateProducts(100000);
 
 // Validate constraint: no price should have more than 1000 products
 const priceCounts = new Map<number, number>();
