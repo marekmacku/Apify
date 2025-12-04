@@ -26,7 +26,6 @@ I implemented a binary search aålgorithm on product prices to efficiently fetch
 - **`searchProducts()`**: Performs binary search on the price range to find the optimal `maxPrice` that yields the target count of products
 - **`getAllProducts()`**: Orchestrates the batching process, using binary search to find optimal boundaries for each batch
 
-
 ### Example Flow
 
 For 10000 products:
@@ -36,11 +35,14 @@ For 10000 products:
 4. Continue until all products fetched
 
 Total: 100-200 requests (depending on the products distribution)
-
+### Why binary search
+- I've decided to go with binary search because all of my other ideas worked only under very strict assumptions or needed additional knowledge to make them work. Also with binary search being well known pattern I believe it makes the code easier to read and understand. It's over all optimal and robust solution with acceptable time complexity even for large scale of items.
 ## Assumptions
 - There CANNOT be more than 1000 products with the same price.
 - The price of the products is always stored as a whole number (never decimal). This is only for simplicity.
 - The products are sorted by price. Otherwise the binary search would be impossible.
+
+
 
 ## Project Structure
 
