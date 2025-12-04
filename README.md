@@ -1,6 +1,46 @@
 # Product Fetcher Project
 
-A product fetching application with two ways to interact: a web UI and a command-line script. The project includes a server API that serves products filtered by price range, and both a React client application and a Node.js script to fetch products.
+## Problem
+Retrieve all of products form an API with as little requests as possible. The API will always return maximum of 1000 products. The only way to overcome this issue is to use `minPrice` and `maxPrice` query parameters. The API doesn't accept any other parameter.
+
+## My Solution
+
+I implemented a binary search aålgorithm on product prices to efficiently fetch all products with minimal API requests. The key insight is that by using binary search to find optimal price boundaries, we can consistently retrieve batches that are as close to the maximum batch size (1000) as possible.
+
+### Algorithm Overview
+
+1. **Initial Request**: Start by fetching the total count of products with a full price range query (`$0 - $100,000`)
+
+2. **Binary Search for Optimal Boundaries**: For each batch, use binary search to find the maximum price that yields exactly (or close to) 1000 products:
+   - Start with a price range (e.g., `$0 - $100,000`)
+   - Use binary search to narrow down to the price that gives us as close to 1000 products as possible
+   - This ensures we maximize the number of products per request
+
+3. **Iterative Batching**: 
+   - Fetch the batch using the optimal price boundary found
+   - Move the `minPrice` to the last fetched price (to avoid overlap)
+   - Repeat until all products are fetched
+
+### Key Functions
+
+- **`searchProducts()`**: Performs binary search on the price range to find the optimal `maxPrice` that yields the target count of products
+- **`getAllProducts()`**: Orchestrates the batching process, using binary search to find optimal boundaries for each batch
+
+
+### Example Flow
+
+For 10000 products:
+1. Initial request: Get total count (1 request)
+2. Batch 1: Binary search finds `maxPrice = $25,000` yields 11000 products (approximetly 10 requests for binary search + 1 fetch = 11 requests)
+3. Batch 2: Start from `$25,000`, find next boundary... (similar process)
+4. Continue until all products fetched
+
+Total: 100-200 requests (depending on the products distribution)
+
+## Assumptions
+- There CANNOT be more than 1000 products with the same price.
+- The price of the products is always stored as a whole number (never decimal). This is only for simplicity.
+- The products are sorted by price. Otherwise the binary search would be impossible.
 
 ## Project Structure
 
@@ -96,7 +136,6 @@ npm run generate
 This script:
 - Generates 100,000 products with random prices between 0 and 100,000
 - Ensures no more than 1,000 products share the same price
-- Validates the constraint before saving
 - Saves the products to `server/products.json`
 
 You can modify the count in `server/src/generate-products.ts` if you need a different number of products for testing.
@@ -127,10 +166,14 @@ Query products by price range.
 - `count` - Number of products in the current batch (max 1000)
 - `products` - Array of products in the batch
 
-## Notes
 
-- The server loads all products into memory at startup for fast filtering
-- Products are sorted by price for efficient range queries
-- The API returns batches of up to 1,000 products per request
-- The fetch script uses binary search to optimize the number of requests needed to fetch all products
+## Personal notes
+### Notes
+Binary search needs sorted values to work --> sort prices
+`searchProducts` will search for products until there is a valid space to search in. i.e. while `low<= high` (e.g. `[0, 100] ✅ [50,100] ✅ [100-100] ✅ [101,100] ❌ --> loop exits`)
 
+While there is a valid space to search in we calculate `mid` price witch we then use to fetch the products as the `maxPrice` param and `minPrice` as the `minPrice` param
+
+If the `totalCount` of products for current price range is bigger or equal to the `targetCount` (`totalCount` = total products for price range, `targetCount` = desired batch size) the answer is at `mid` or lower.  We set the `currentPrice` to `mid` and `high` to `mid - 1`. `currentPrice` is the value we return after the loop ends. And we adjust the `high` because the answer is lower than the prev `high`.
+
+If the `totalCount` is lower than the `targetCount` the answer is above `mid` so we adjust the `low` to `mid + 1`. We need the + 1 and - 1 to prevent infinite loops.
